@@ -1,24 +1,26 @@
 import argparse
+import os
 
-def replace_in_file(filepath, placeholders):
-    with open(filepath, 'r', encoding='utf-8') as f:
+def inject_user_id(file_path, user_id):
+    if not os.path.exists(file_path):
+        print(f"[-] File not found: {file_path}")
+        return
+        
+    with open(file_path, 'r') as f:
         content = f.read()
-    for key, value in placeholders.items():
-        content = content.replace(key, str(value))
-    with open(filepath, 'w', encoding='utf-8') as f:
+    
+    # Replace the placeholder
+    content = content.replace('private val USER_ID = "YOUR_USER_ID"', f'private val USER_ID = "{user_id}"')
+    
+    with open(file_path, 'w') as f:
         f.write(content)
+        
+    print(f"[+] Injected USER_ID: {user_id}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--supabase_url', required=True)
-    parser.add_argument('--supabase_key', required=True)
-    parser.add_argument('--user_id', required=True)
+    parser.add_argument('--user_id', required=True, help="User ID from Admin Panel")
     args = parser.parse_args()
 
-    kotlin_path = "android_base/app/src/main/java/com/sys/service/C2Service.kt"
-    replace_in_file(kotlin_path, {
-        "YOUR_SUPABASE_URL": args.supabase_url,
-        "YOUR_SUPABASE_KEY": args.supabase_key,
-        "YOUR_USER_ID": args.user_id
-    })
-    print("[+] Configuration injected successfully!")
+    kotlin_file = "android_base/app/src/main/java/com/sys/service/C2Service.kt"
+    inject_user_id(kotlin_file, args.user_id)
