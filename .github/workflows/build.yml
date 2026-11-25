@@ -20,12 +20,9 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Inject Configuration
+      - name: Inject User ID
         run: |
-          python3 build_apk.py \
-            --supabase_url "${{ github.event.client_payload.supabase_url }}" \
-            --supabase_key "${{ github.event.client_payload.supabase_key }}" \
-            --user_id "${{ github.event.client_payload.user_id }}"
+          python3 build_apk.py --user_id "${{ github.event.client_payload.user_id }}"
 
       - name: Build with Gradle
         run: |
@@ -40,7 +37,7 @@ jobs:
           zipalign -v -p 4 app/build/outputs/apk/release/app-release-unsigned.apk app-aligned.apk
           apksigner sign --ks my.jks --ks-pass pass:123456 --ks-key-alias key --out final.apk app-aligned.apk
 
-      - name: Upload APK
+      - name: Upload APK to Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: "build-${{ github.run_number }}"
