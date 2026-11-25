@@ -1,0 +1,49 @@
+name: Build Payload APK
+
+on:
+  repository_dispatch:
+    types: [build_apk]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Inject Configuration
+        run: |
+          python3 build_apk.py \
+            --supabase_url "${{ github.event.client_payload.supabase_url }}" \
+            --supabase_key "${{ github.event.client_payload.supabase_key }}" \
+            --user_id "${{ github.event.client_payload.user_id }}"
+
+      - name: Build with Gradle
+        run: |
+          cd android_base
+          chmod +x gradlew
+          ./gradlew assembleRelease
+
+      - name: Sign APK
+        run: |
+          cd android_base
+          keytool -genkey -v -keystore my.jks -keyalg RSA -keysize 2048 -validity 10000 -alias key -storepass 123456 -keypass 123456 -dname "CN=Test"
+          zipalign -v -p 4 app/build/outputs/apk/release/app-release-unsigned.apk app-aligned.apk
+          apksigner sign --ks my.jks --ks-pass pass:123456 --ks-key-alias key --out final.apk app-aligned.apk
+
+      - name: Upload APK
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: "build-${{ github.run_number }}"
+          files: android_base/final.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
