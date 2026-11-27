@@ -2,7 +2,7 @@ name: Build Payload APK
 
 on:
   repository_dispatch:
-    types: [build-apk]
+    types: [build-apk] 
 
 jobs:
   build:
@@ -25,6 +25,7 @@ jobs:
         with:
           gradle-version: 8.0
 
+      # 🛠️ Ye step missing gradlew aur proguard file ko fix karega
       - name: Fix Gradle Wrapper
         run: |
           cd android_base
