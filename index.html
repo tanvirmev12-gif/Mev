@@ -79,7 +79,7 @@
         // --- APPWRITE CONFIG ---
         const APPWRITE_ENDPOINT = 'https://sgp.cloud.appwrite.io/v1';
         const PROJECT_ID = '6b09c77f001ea24e16bd';
-        const DB_ID = '6b09c7cb003058ca1f...'; // <-- APNI POORI DB ID YAHAN DAALEIN
+        const DB_ID = '6b09c7cb003058ca1f45'; // <- Aapki Poori DB ID
         const DEVICES_COL = 'devices';
         
         // GITHUB CONFIG
@@ -87,7 +87,6 @@
         const GITHUB_USERNAME = "tanvirmev12-gif";
         const GITHUB_REPO = "mev";
 
-        // Appwrite Client
         const client = new Appwrite.Client()
             .setEndpoint(APPWRITE_ENDPOINT)
             .setProject(PROJECT_ID);
@@ -116,7 +115,6 @@
                     if (currentRole === 'admin') {
                         document.getElementById('adminPanel').classList.remove('hidden');
                     }
-                    
                     loadAllDevices();
                 } else {
                     alert("Invalid credentials");
@@ -131,8 +129,7 @@
                 const response = await databases.listDocuments(DB_ID, DEVICES_COL);
                 renderDevices(response.documents);
             } catch (e) {
-                console.error(e);
-                document.getElementById('deviceContainer').innerHTML = `<div style="text-align:center; padding:20px; color:red">Database Error: ${e.message}</div>`;
+                document.getElementById('deviceContainer').innerHTML = `<div style="text-align:center; padding:20px; color:red">Error: ${e.message}</div>`;
             }
         }
 
