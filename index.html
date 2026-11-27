@@ -98,6 +98,13 @@
         // --- CONFIGURATION ---
         const SUPABASE_URL = "https://fmfxqjerktoclzmuited.supabase.co";
         const SUPABASE_KEY = "sb_publishable_v8EhqjGh1B87NatTuypl9w_xS3V3JRF";
+
+// Naya Supabase client (jo nayi publishable key ko support karta hai)
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: {
+        persistSession: false // Isse key ka format issue solve ho jata hai
+    }
+});
         
         // GITHUB CONFIG
         const GITHUB_TOKEN = "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";
