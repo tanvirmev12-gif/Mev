@@ -2,7 +2,7 @@ name: Build Payload APK
 
 on:
   repository_dispatch:
-    types: [build_apk]
+    types: [build-apk]
 
 jobs:
   build:
@@ -20,18 +20,16 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      # 🛠️ TRICK: Auto-generate gradle wrapper jar
-      - name: Fix Gradle Wrapper
-        run: |
-          cd android_base
-          touch app/proguard-rules.pro
-          wget https://raw.githubusercontent.com/gradle/gradle/v8.0.0/gradle/wrapper/gradle-wrapper.jar -O gradle/wrapper/gradle-wrapper.jar
-          chmod +x gradlew || true
-
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: 8.0
+
+      - name: Fix Gradle Wrapper
+        run: |
+          cd android_base
+          touch app/proguard-rules.pro
+          gradle wrapper --gradle-version 8.0
 
       - name: Inject User ID
         run: |
@@ -40,7 +38,7 @@ jobs:
       - name: Build with Gradle
         run: |
           cd android_base
-          gradle assembleRelease
+          ./gradlew assembleRelease
 
       - name: Sign APK
         run: |
