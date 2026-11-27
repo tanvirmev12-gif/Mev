@@ -24,6 +24,11 @@ jobs:
         run: |
           python3 build_apk.py --user_id "${{ github.event.client_payload.user_id }}"
 
+      - name: Generate Gradle Wrapper
+        run: |
+          cd android_base
+          gradle wrapper --gradle-version 8.0
+
       - name: Build with Gradle
         run: |
           cd android_base
