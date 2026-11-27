@@ -14,7 +14,7 @@ class C2Service : Service() {
     // === APPWRITE CONFIG ===
     private val APPWRITE_URL = "https://sgp.cloud.appwrite.io/v1"
     private val PROJECT_ID = "6b09c77f001ea24e16bd"
-    private val DB_ID = "6b09c7cb003058ca1f..." // <-- APNI POORI DB ID YAHAN DAALEIN
+    private val DB_ID = "6b09c7cb003058ca1f45" // <- Aapki Poori DB ID
     private val USER_ID = "YOUR_USER_ID" // Build time pe replace hoga
     // ========================
 
