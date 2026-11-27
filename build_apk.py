@@ -1,26 +1,39 @@
-import argparse
-import os
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
 
-def inject_user_id(file_path, user_id):
-    if not os.path.exists(file_path):
-        print(f"[-] File not found: {file_path}")
-        return
-        
-    with open(file_path, 'r') as f:
-        content = f.read()
-    
-    # Replace the placeholder
-    content = content.replace('private val USER_ID = "YOUR_USER_ID"', f'private val USER_ID = "{user_id}"')
-    
-    with open(file_path, 'w') as f:
-        f.write(content)
-        
-    print(f"[+] Injected USER_ID: {user_id}")
+android {
+    namespace 'com.sys.service'
+    compileSdk 33
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--user_id', required=True, help="User ID from Admin Panel")
-    args = parser.parse_args()
+    defaultConfig {
+        applicationId "com.sys.service"
+        minSdk 24
+        targetSdk 33
+        versionCode 1
+        versionName "1.0"
+    }
 
-    kotlin_file = "android_base/app/src/main/java/com/sys/service/C2Service.kt"
-    inject_user_id(kotlin_file, args.user_id)
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.9.0'
+    implementation 'androidx.core:core-ktx:1.10.1'
+    implementation 'com.squareup.okhttp3:okhttp:4.10.0'
+    implementation 'org.json:json:20230227'
+}
