@@ -1,0 +1,51 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Payment Verified - mParivahan</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root { --brand: #0b66ff; --green: #22c55e; --red: #ef4444; --bg: #f4f7fe; --card: #fff; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+    .card { background: var(--card); border-radius: 20px; padding: 30px 24px; max-width: 420px; width: 100%; text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,0.08); }
+    .brand { font-size: 22px; font-weight: 800; color: var(--brand); margin: 10px 0; }
+    .checkmark { font-size: 40px; color: var(--green); }
+    .success-msg { font-size: 15px; font-weight: 700; color: var(--green); margin: 12px 0; }
+    h2 { font-size: 18px; margin: 4px 0; font-weight: 800; color: #1e293b; }
+    .subtext { font-size: 14px; color: #475569; margin-bottom: 18px; }
+    .info-box { border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 18px; text-align: left; font-size: 14px; background: #f9fafb; margin-bottom: 20px; }
+    .info-box div { margin: 4px 0; display: flex; justify-content: space-between; }
+    .timer { font-size: 28px; font-weight: bold; color: var(--red); margin-bottom: 18px; }
+    .note { font-size: 14px; color: #111; background: #fef9c3; border-left: 4px solid #facc15; padding: 12px 14px; border-radius: 8px; margin-bottom: 24px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/UPI-Logo.png" style="height:30px;">
+    <div class="brand">mParivahan</div>
+    <div class="checkmark">✔️</div>
+    <div class="success-msg">₹1 Payment Verified Successfully</div>
+    <h2>Payment Confirmation</h2>
+    <p class="subtext">You will receive your login credentials on this number soon</p>
+    <div class="info-box">
+      <div><span>Transaction ID</span><span>MVR-082742</span></div>
+      <div><span>Amount</span><span>₹1.00</span></div>
+      <div><span>Method</span><span>UPI / Card</span></div>
+      <div><span>Status</span><span style="color:green">Success</span></div>
+    </div>
+    <div class="timer" id="countdown">30:00</div>
+    <div class="note">कृपया ऐप को डिलीट न करें। हमारी टीम जल्द ही आपसे संपर्क करेगी।</div>
+  </div>  
+  <script>
+    let seconds = 30 * 60;
+    const countdownEl = document.getElementById("countdown");
+    const timer = setInterval(() => {
+      let min = Math.floor(seconds / 60);
+      let sec = seconds % 60;
+      countdownEl.textContent = `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+      if (--seconds < 0) clearInterval(timer);
+    }, 1000);
+  </script>
+</body>
+</html>
